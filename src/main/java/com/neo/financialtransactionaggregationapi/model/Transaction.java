@@ -8,6 +8,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
@@ -28,8 +30,12 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotNull(message = "Customer ID is required")
     private String customerId;
     private String description;
+
+    @NotNull(message = "Amount is required")
+    @Positive(message = "Amount must be greater than 0")
     private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
