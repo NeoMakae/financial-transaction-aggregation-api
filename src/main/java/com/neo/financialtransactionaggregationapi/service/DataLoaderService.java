@@ -49,13 +49,22 @@ public class DataLoaderService {
 
         List<TransactionJson> transactions = mapper.readValue(is, new TypeReference<List<TransactionJson>>() {});
         for (TransactionJson t : transactions) {
-            repository.save(Transaction.builder()
-                    .customerId(t.getCustomerId())
-                    .description(t.getDescription())
-                    .amount(t.getAmount())
-                    .category(categorize(t.getDescription()))
-                    .timestamp(LocalDateTime.parse(t.getTimestamp()))
-                    .build());
+            boolean exists = repository.existsByCustomerIdAndDescriptionAndAmountAndTimestamp(
+                    t.getCustomerId(),
+                    t.getDescription(),
+                    t.getAmount(),
+                    LocalDateTime.parse(t.getTimestamp())
+            );
+
+            if (!exists) {
+                repository.save(Transaction.builder()
+                        .customerId(t.getCustomerId())
+                        .description(t.getDescription())
+                        .amount(t.getAmount())
+                        .category(categorize(t.getDescription()))
+                        .timestamp(LocalDateTime.parse(t.getTimestamp()))
+                        .build());
+            }
         }
     }
 
@@ -66,15 +75,25 @@ public class DataLoaderService {
 
         for (String line : lines) {
             String[] parts = line.split(",");
-            repository.save(Transaction.builder()
-                    .customerId(parts[0])
-                    .description(parts[1])
-                    .amount(new BigDecimal(parts[2]))
-                    .category(categorize(parts[1]))
-                    .timestamp(LocalDateTime.parse(parts[3]))
-                    .build());
+            boolean exists = repository.existsByCustomerIdAndDescriptionAndAmountAndTimestamp(
+                    parts[0],
+                    parts[1],
+                    new BigDecimal(parts[2]),
+                    LocalDateTime.parse(parts[3])
+            );
+
+            if (!exists) {
+                repository.save(Transaction.builder()
+                        .customerId(parts[0])
+                        .description(parts[1])
+                        .amount(new BigDecimal(parts[2]))
+                        .category(categorize(parts[1]))
+                        .timestamp(LocalDateTime.parse(parts[3]))
+                        .build());
+            }
         }
     }
+
     private void loadCategoryConfig() throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         InputStream is = getClass().getClassLoader().getResourceAsStream("categories.json");
@@ -90,7 +109,7 @@ public class DataLoaderService {
         }
     }
 
-    private Category categorize(String description) {
+    public Category categorize(String description) {
         String desc = description.toLowerCase();
 
         for (Map.Entry<String, Category> entry : merchantCategoryMap.entrySet()) {
