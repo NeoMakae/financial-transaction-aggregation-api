@@ -1,6 +1,0 @@
-{
-  "FOOD": ["woolworths", "checkers", "pick n pay", "spar", "shoprite"],
-  "TRAVEL": ["uber", "bolt", "taxi", "lyft", "bus", "train"],
-  "ENTERTAINMENT": ["dstv", "showmax", "netflix", "music", "movie", "tv"],
-  "BILLS": ["eskom", "municipal", "water", "electricity", "internet"]
-}
