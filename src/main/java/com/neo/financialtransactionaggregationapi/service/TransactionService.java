@@ -1,5 +1,7 @@
 package com.neo.financialtransactionaggregationapi.service;
 
+import com.neo.financialtransactionaggregationapi.exception.BadRequestException;
+import com.neo.financialtransactionaggregationapi.exception.ResourceNotFoundException;
 import com.neo.financialtransactionaggregationapi.model.Category;
 import com.neo.financialtransactionaggregationapi.model.Transaction;
 import com.neo.financialtransactionaggregationapi.repository.TransactionRepository;
@@ -60,14 +62,11 @@ public class TransactionService {
                 : repository.findAll();
 
         return transactions.stream()
-                // filter by category if provided
                 .filter(t -> category == null || t.getCategory() == category)
-                // filter by mandatory date range
                 .filter(t -> {
                     LocalDate date = t.getTimestamp().toLocalDate();
                     return !date.isBefore(start) && !date.isAfter(end);
                 })
-                // aggregate by category safely (map nulls to UNCATEGORIZED)
                 .collect(Collectors.groupingBy(
                         t -> t.getCategory() != null ? t.getCategory() : Category.UNCATEGORIZED,
                         Collectors.reducing(
@@ -84,12 +83,10 @@ public class TransactionService {
             LocalDate start,
             LocalDate end
     ) {
-        List<Transaction> transactions;
-        if (customerId != null) {
-            transactions = repository.findByCustomerId(customerId);
-        } else {
-            transactions = repository.findAll();
-        }
+        List<Transaction> transactions = (customerId != null)
+                ? repository.findByCustomerId(customerId)
+                : repository.findAll();
+
         return transactions.stream()
                 .filter(t -> category == null || t.getCategory() == category)
                 .filter(t -> start == null || !t.getTimestamp().toLocalDate().isBefore(start))
@@ -122,15 +119,22 @@ public class TransactionService {
         return repository.save(transaction);
     }
 
-    public Transaction getTransaction(Long id) {
+    public Transaction getTransactionById(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Transaction not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Transaction not found with id: " + id));
     }
 
     private List<Transaction> getTransactions(String customerId) {
         return customerId != null
                 ? repository.findByCustomerId(customerId)
                 : repository.findAll();
+    }
+
+    public void validateDateRange(LocalDate start, LocalDate end) {
+        if (start != null && end != null && start.isAfter(end)) {
+            throw new BadRequestException("Start date must be before or equal to end date");
+        }
     }
 
     private Predicate<Transaction> byCategory(Category category) {

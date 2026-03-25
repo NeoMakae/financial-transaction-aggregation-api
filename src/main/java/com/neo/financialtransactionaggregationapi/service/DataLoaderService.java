@@ -1,5 +1,6 @@
 package com.neo.financialtransactionaggregationapi.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neo.financialtransactionaggregationapi.model.Category;
 import com.neo.financialtransactionaggregationapi.model.Transaction;
 import com.neo.financialtransactionaggregationapi.repository.TransactionRepository;
@@ -8,8 +9,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.stereotype.Service;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
