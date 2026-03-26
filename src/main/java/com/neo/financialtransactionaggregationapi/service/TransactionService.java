@@ -3,11 +3,16 @@ package com.neo.financialtransactionaggregationapi.service;
 import com.neo.financialtransactionaggregationapi.exception.BadRequestException;
 import com.neo.financialtransactionaggregationapi.exception.ResourceNotFoundException;
 import com.neo.financialtransactionaggregationapi.model.Category;
+import com.neo.financialtransactionaggregationapi.model.SortField;
 import com.neo.financialtransactionaggregationapi.model.Transaction;
 import com.neo.financialtransactionaggregationapi.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -23,22 +28,9 @@ public class TransactionService {
 
     private final TransactionRepository repository;
 
+    private static final int PAGE_SIZE = 5;
+
     private final DataLoaderService dataLoaderService;
-
-    public List<Transaction> getTransactions(String customerId, LocalDate start, LocalDate end) {
-        List<Transaction> transactions = (customerId != null)
-                ? repository.findByCustomerId(customerId)
-                : repository.findAll();
-
-        return transactions.stream()
-                .filter(t -> {
-                    LocalDate date = t.getTimestamp().toLocalDate();
-                    boolean afterStart = (start == null || !date.isBefore(start));
-                    boolean beforeEnd = (end == null || !date.isAfter(end));
-                    return afterStart && beforeEnd;
-                })
-                .collect(Collectors.toList());
-    }
 
     @Cacheable(value = "filteredTransactions", key = "#customerId + '-' + #category + '-' + #start + '-' + #end")
     public List<Transaction> getFilteredTransactions(
@@ -132,10 +124,23 @@ public class TransactionService {
                         new ResourceNotFoundException("Transaction not found with id: " + id));
     }
 
-    private List<Transaction> getTransactions(String customerId) {
+    public List<Transaction> getTransactions(String customerId) {
         return customerId != null
                 ? repository.findByCustomerId(customerId)
                 : repository.findAll();
+    }
+
+    public Page<Transaction> getTransactionsPaginated(String customerId,
+                                              int page,
+                                              int size,
+                                              SortField sortBy,
+                                              boolean ascending) {
+        Sort sort = ascending ? Sort.by(sortBy.getField()).ascending() : Sort.by(sortBy.getField()).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        return (customerId != null)
+                ? repository.findByCustomerId(customerId, pageable)
+                : repository.findAll(pageable);
     }
 
     public void validateDateRange(LocalDate start, LocalDate end) {
