@@ -6,6 +6,8 @@ import com.neo.financialtransactionaggregationapi.model.Category;
 import com.neo.financialtransactionaggregationapi.model.Transaction;
 import com.neo.financialtransactionaggregationapi.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -38,6 +40,7 @@ public class TransactionService {
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(value = "filteredTransactions", key = "#customerId + '-' + #category + '-' + #start + '-' + #end")
     public List<Transaction> getFilteredTransactions(
             String customerId,
             Category category,
@@ -51,6 +54,7 @@ public class TransactionService {
                 .toList();
     }
 
+    @Cacheable(value = "aggregateByDate", key = "#customerId + '-' + #category + '-' + #start + '-' + #end")
     public Map<Category, BigDecimal> aggregateByDate(
             String customerId,
             Category category,
@@ -77,6 +81,7 @@ public class TransactionService {
                 ));
     }
 
+    @Cacheable(value = "aggregateByCategory", key = "#customerId + '-' + #category + '-' + #start + '-' + #end")
     public Map<Category, BigDecimal> aggregateByCategory(
             String customerId,
             Category category,
@@ -113,12 +118,14 @@ public class TransactionService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
+    @CacheEvict(value = {"transactions", "filteredTransactions", "aggregateByCategory", "aggregateByDate"}, allEntries = true)
     public Transaction save(Transaction transaction) {
         if(transaction.getCategory() != null) return repository.save(transaction);
         transaction.setCategory(dataLoaderService.categorize(transaction.getDescription()));
         return repository.save(transaction);
     }
 
+    @Cacheable(value = "transactions", key = "#id")
     public Transaction getTransactionById(Long id) {
         return repository.findById(id)
                 .orElseThrow(() ->
