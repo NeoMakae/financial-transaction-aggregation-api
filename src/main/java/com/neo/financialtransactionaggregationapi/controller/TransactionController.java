@@ -1,12 +1,14 @@
 package com.neo.financialtransactionaggregationapi.controller;
 
 import com.neo.financialtransactionaggregationapi.model.Category;
+import com.neo.financialtransactionaggregationapi.model.SortField;
 import com.neo.financialtransactionaggregationapi.model.Transaction;
 import com.neo.financialtransactionaggregationapi.service.TransactionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -38,6 +40,29 @@ public class TransactionController {
     }
 
     @Operation(
+            summary = "Get paginated transactions",
+            description = "Fetch transactions in a paginated and sorted format. Optionally filter by customerId. " +
+                    "Supports page number, page size, sort column, and sort direction."
+    )
+    @GetMapping("/transactions/paginated")
+    public ResponseEntity<Page<Transaction>> getTransactionsPaginated(
+            @RequestParam(required = false) String customerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "ID") SortField sortBy,
+            @RequestParam(defaultValue = "true") boolean ascending
+    ) {
+        log.info("Fetching paginated transactions: customerId={}, page={}, size={}, sortBy={}, ascending={}",
+                customerId, page, size, sortBy, ascending);
+
+        Page<Transaction> result = service.getTransactionsPaginated(customerId, page, size, sortBy, ascending);
+
+        log.info("Returned {} transactions for page {} (totalPages={})",
+                result.getNumberOfElements(), result.getNumber(), result.getTotalPages());
+
+        return ResponseEntity.ok(result);
+    }
+        @Operation(
             summary = "Get transaction by ID",
             description = "Retrieve a single transaction by its unique ID"
     )

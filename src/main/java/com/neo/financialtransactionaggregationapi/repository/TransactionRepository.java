@@ -2,6 +2,8 @@ package com.neo.financialtransactionaggregationapi.repository;
 
 import com.neo.financialtransactionaggregationapi.model.Category;
 import com.neo.financialtransactionaggregationapi.model.Transaction;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.math.BigDecimal;
@@ -12,6 +14,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     List<Transaction> findByCustomerId(String customerId);
 
+    Page<Transaction> findByCustomerId(String customerId, Pageable pageable);
+
+    Page<Transaction> findAll(Pageable pageable);
 
     boolean existsByCustomerIdAndDescriptionAndAmountAndTimestamp(
                 String customerId, String description, BigDecimal amount, LocalDateTime timestamp
